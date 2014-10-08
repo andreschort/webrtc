@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        
+        <div style="float:left">
+            <span>Local session descriptor</span><br/>
+            <textarea id="localDesc" cols="130" rows="31"></textarea>
+        </div>
+        
+        <div style="float:right">
+            <span>Remote session descriptor</span><br/>
+            <textarea id="remoteDesc" cols="130" rows="31"></textarea>
+        </div>
+        
+        <button id="call" onclick="call();" style="float:right">Call</button>
+        <video id="localVideo" autoplay />
+        <video id="remoteVideo" autoplay />
+    </body>
+</html>
