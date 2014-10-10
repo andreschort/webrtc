@@ -8,7 +8,3 @@ server.on('connection', function(id) {
 server.on('disconnect', function(id) { 
     console.log('disconnected: ' + id);
 })
-
-var connect = require('connect');
-var serveStatic = require('serve-static');
-connect().use(serveStatic('.')).listen(8080);

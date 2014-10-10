@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <script src="peer.min.js"></script>
+        <script src="jquery-2.1.1.min.js"></script>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        <span>Tu id:</span>
+        <input id="myId" type="text" disabled readonly  /><br/>
+        <span id="targetIdLabel">Id destino:</span>
+        <input id="targetId" type="text" />
+
+        <button id="connect" onclick="connect();">Conectar</button>
+        <button id="disconnect" onclick="disconnect();">Desconectar</button><br/>
+        
+        <textarea id="chatLog" cols="130" rows="31" readonly></textarea><br/>
+        <input id="input" type="text" />
+        <button id="send" type="button" onclick="send();">Enviar</button>
+    </body>
+</html>
