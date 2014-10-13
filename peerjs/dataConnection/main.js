@@ -40,7 +40,22 @@ Chat.prototype.init = function () {
 
     $('#send').click(function () {
         self.send();
+    }).attr('disabled', true);
+
+    // manejar tecla enter en inputs
+    $('#targetId').on('keyup', function (e) {
+        var code = e.keyCode || e.which;
+        if (code == 13) {
+            self.connect();
+        }
     });
+
+    $('#input').on('keyup', function (e) {
+        var code = e.keyCode || e.which;
+        if (code == 13) {
+            self.send();
+        }
+    }).attr('disabled', true);
 };
 
 Chat.prototype.handleConnection = function (conn) {
@@ -71,7 +86,15 @@ Chat.prototype.handleOpen = function (conn) {
     $('#targetId').val(conn.peer).attr('disabled', true);
     $('#connect').hide();
     $('#disconnect').show();
-    $('#chatLog').append('\nConectado con ' + conn.peer);
+    $('#input').attr('disabled', false).focus();
+    $('#send').attr('disabled', false);
+
+    var message = 'Conectado con ' + conn.peer;
+    if ($('#chatLog').val().length > 0){
+        message = '\n' + message;
+    }
+
+    $('#chatLog').append(message);
 };
 
 Chat.prototype.handleData = function (conn, data) {
@@ -84,10 +107,12 @@ Chat.prototype.handleClose = function (conn) {
     'use strict';
 
     $('#targetIdLabel').text('Id destino');
-    $('#targetId').attr('disabled', false);
+    $('#targetId').attr('disabled', false).focus();
     $('#connect').show();
     $('#disconnect').hide();
     $('#chatLog').append('\nDesconectado de ' + conn.peer);
+    $('#input').attr('disabled', true);
+    $('#send').attr('disabled', true);
 };
 
 // acciones
