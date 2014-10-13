@@ -1,60 +1,118 @@
 $(document).on('ready', function () {
-    $('#disconnect').hide();
+    'use strict';
+
+    var chat = new Chat();
+
+    chat.init();
 });
 
-var peer = new Peer({host: 'localhost', port: 9000, path: 'myapp'});
-var connection;
+function Chat() {
+    'use strict';
+}
 
-peer.on('open', function(id) {
-    $('#myId').val(id);
-});
+Chat.prototype.init = function () {
+    'use strict';
 
-peer.on('connection', function(conn) {
-    connection = conn;
+    this.peer = new Peer({
+        host: 'localhost',
+        port: 9000,
+        path: 'myapp'
+    });
     
-    conn.on('open', function () { connected(conn);});
+    var self = this;
     
-    conn.on('data', function(data){
-        $('#chatLog').append("\nEl: " + data);
+    this.peer.on('open', function (id) {
+        $('#myId').val(id);
     });
 
-    conn.on('close', function() { disconnected(); });
-});
-
-function connect() {
-    var targetId = $('#targetId').val();
-    connection = peer.connect(targetId);
-    connection.on('open', function(){ connected(connection); });
-    connection.on('close', function() { disconnected();});
-    connection.on('data', function(data) {
-        $('#chatLog').append("\nEl: " + data);
+    this.peer.on('connection', function (conn) {
+        self.handleConnection(conn);
     });
-}
 
-function send() {
-    var data = $('#input').val();
-    $('#chatLog').append('\nYo: ' + data);
-    connection.send(data);
-    $('#input').val('').focus();
-}
+    // botones
+    $('#connect').click(function () {
+        self.connect();
+    });
 
-function disconnect() {
-    connection.close();
-    disconnected();
-}
+    $('#disconnect').click(function () {
+        self.disconnect();
+    }).hide();
 
-function disconnected() {
-    $('#targetIdLabel').text('Id destino');
-    $('#targetId').attr('disabled', false);
-    $('#connect').show();
-    $('#disconnect').hide();
-    $('#chatLog').append('Desconectado de ' + conn.peer);
-}
+    $('#send').click(function () {
+        self.send();
+    });
+};
 
-function connected(conn) {
+Chat.prototype.handleConnection = function (conn) {
+    'use strict';
+
+    this.connection = conn;
+
+    var self = this;
+    conn.on('data', function (data) {
+        self.handleData(conn, data);
+    });
+
+    conn.on('open', function () {
+        self.handleOpen(conn);
+    });
+
+    conn.on('close', function () {
+        self.handleClose(conn);
+    });
+};
+
+// eventos de una conexion
+
+Chat.prototype.handleOpen = function (conn) {
+    'use strict';
+
     $('#targetIdLabel').text('Conectado con');
     $('#targetId').val(conn.peer).attr('disabled', true);
     $('#connect').hide();
     $('#disconnect').show();
     $('#chatLog').append('\nConectado con ' + conn.peer);
-}
+};
+
+Chat.prototype.handleData = function (conn, data) {
+    'use strict';
+
+    $('#chatLog').append("\nEl: " + data);
+};
+
+Chat.prototype.handleClose = function (conn) {
+    'use strict';
+
+    $('#targetIdLabel').text('Id destino');
+    $('#targetId').attr('disabled', false);
+    $('#connect').show();
+    $('#disconnect').hide();
+    $('#chatLog').append('\nDesconectado de ' + conn.peer);
+};
+
+// acciones
+
+Chat.prototype.connect = function () {
+    'use strict';
+
+    var targetId = $('#targetId').val();
+
+    var connection = this.peer.connect(targetId);
+    this.handleConnection(connection);
+};
+
+Chat.prototype.send = function () {
+    'use strict';
+
+    var data = $('#input').val();
+    $('#chatLog').append('\nYo: ' + data);
+
+    this.connection.send(data);
+    $('#input').val('').focus();
+};
+
+Chat.prototype.disconnect = function () {
+    'use strict';
+
+    this.connection.close();
+};
