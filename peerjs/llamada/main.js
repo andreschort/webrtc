@@ -26,6 +26,7 @@ Chat.prototype.init = function () {
     });
 
     this.peer.on('connection', this.handleConnection.bind(this));
+    this.peer.on('call', this.handleCall.bind(this));    
     this.peer.on('error', this.log.bind(this));
     
     this.peer.on('disconnected', function () {
@@ -40,6 +41,8 @@ Chat.prototype.init = function () {
     $('#connect').click(this.connect.bind(this));
     $('#disconnect').click(this.disconnect.bind(this)).hide();
     $('#send').click(this.send.bind(this)).attr('disabled', true);
+    $('#call').click(this.call.bind(this));
+    $('#hangup').click(this.hangup.bind(this)).hide();
 
     // manejar tecla enter en inputs
     $('#targetId').on('keyup', function (e) {
@@ -74,9 +77,54 @@ Chat.prototype.handleConnection = function (conn) {
     conn.on('close', function () {
         self.handleClose(conn);
     });
+    
+    conn.on('error', function (err) { alert(err); });
 };
 
-// eventos de una conexion
+Chat.prototype.handleCall = function (mediaConn) {
+    'use strict';
+    
+    this.mediaConnection = mediaConn;
+    
+    var self = this;
+
+    var constraints = {
+        audio: true,
+        video: $('#withVideo').prop('checked')
+    };
+    
+    this.getUserMedia(constraints, function (stream) {
+        self.localStream = stream;
+        $('#myVideo').show().attr('src', URL.createObjectURL(stream));
+        mediaConn.answer(stream);
+        self.handleMediaConnection(mediaConn);
+    }, function (err) { alert(err); });
+};
+
+Chat.prototype.handleMediaConnection = function (mediaConn) {
+    this.mediaConnection = mediaConn;
+    
+    $('#call').hide();
+    $('#withVideo').parent().hide();
+    $('#hangup').show();
+    
+    mediaConn.on('stream', function (stream) {
+        $('#remoteVideo').show().attr('src', URL.createObjectURL(stream));
+    });
+    
+    var self = this;
+    mediaConn.on('close', function () {
+        self.localStream.stop();
+        
+        $('#call').show();
+        $('#withVideo').parent().show();
+        $('#hangup').hide();
+        $('#remoteVideo').hide();
+        $('#myVideo').hide();
+    });
+};
+
+// eventos de un DataConnection
 
 Chat.prototype.handleOpen = function (conn) {
     'use strict';
@@ -144,4 +192,36 @@ Chat.prototype.disconnect = function () {
 Chat.prototype.log = function (err) {
     console.log(err);
     $('#chatLog').append('\n' + err);
+};
+
+Chat.prototype.call = function () {
+    'use strict';
+    
+    var constraints = {
+        audio: true,
+        video: $('#withVideo').prop('checked')
+    };
+
+    var self = this;
+    this.getUserMedia(constraints, function (stream) {
+        self.localStream = stream;
+        $('#myVideo').show().attr('src', URL.createObjectURL(stream));
+        var mediaConn = self.peer.call($('#targetId').val(), stream);
+        self.handleMediaConnection(mediaConn);
+    }, function (err) { alert(err); });
+};
+
+Chat.prototype.getUserMedia = function (constraints, success, failure) {
+    'use strict';
+    
+    var getMedia =  navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
+    getMedia = getMedia.bind(navigator);
+    
+    getMedia(constraints, success, failure);
+};
+
+Chat.prototype.hangup = function () {
+    'use strict';
+    
+    this.mediaConnection.close();
 };

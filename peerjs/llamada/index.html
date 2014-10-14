@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <script src="peer.min.js"></script>
+        <script src="jquery-2.1.1.min.js"></script>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        <div style="float:right;">
+            <video id="remoteVideo" autoplay></video><br/>
+        </div>
+        <span>Tu id:</span>
+        <input id="myId" type="text" disabled readonly  /><br/>
+        <span id="targetIdLabel">Id destino:</span>
+        <input id="targetId" type="text" />
+
+        <button id="connect">Conectar</button>
+        <button id="disconnect">Desconectar</button>
+        <button id="call">Llamar</button>
+        <button id="hangup">Cortar</button>
+        <span><input id="withVideo" type="checkbox" checked />Video</span>
+        <br/>
+        
+        <textarea id="chatLog" cols="70" rows="18" readonly></textarea><br/>
+        <input id="input" type="text" />
+        <button id="send" type="button">Enviar</button><br/>
+        <video id="myVideo" autoplay></video>
+    </body>
+</html>
