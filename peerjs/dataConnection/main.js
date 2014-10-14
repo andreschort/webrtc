@@ -28,6 +28,18 @@ Chat.prototype.init = function () {
     this.peer.on('connection', function (conn) {
         self.handleConnection(conn);
     });
+    
+    this.peer.on('error', function (err) {
+        console.log(err);
+    });
+    
+    this.peer.on('disconnected', function () {
+        console.log('disconnected');
+    });
+    
+    this.peer.on('close', function (err) {
+        console.log('closed');
+    });
 
     // botones
     $('#connect').click(function () {
