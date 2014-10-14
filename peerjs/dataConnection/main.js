@@ -14,7 +14,7 @@ Chat.prototype.init = function () {
     'use strict';
 
     this.peer = new Peer({
-        host: 'localhost',
+        host: '10.60.1.5',
         port: 9000,
         path: 'myapp'
     });
@@ -30,15 +30,15 @@ Chat.prototype.init = function () {
     });
     
     this.peer.on('error', function (err) {
-        console.log(err);
+        self.log(err);
     });
     
     this.peer.on('disconnected', function () {
-        console.log('disconnected');
+        self.log('peer: disconnected');
     });
     
-    this.peer.on('close', function (err) {
-        console.log('closed');
+    this.peer.on('close', function () {
+        self.log('peer: closed');
     });
 
     // botones
@@ -152,4 +152,9 @@ Chat.prototype.disconnect = function () {
     'use strict';
 
     this.connection.close();
+};
+
+Chat.prototype.log = function (err) {
+    console.log(err);
+    $('#chatLog').append('\n' + err);
 };
