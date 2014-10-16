@@ -25,6 +25,7 @@ Chat.prototype.init = function () {
     $('#send').click(this.send.bind(this)).attr('disabled', true);
     $('#call').click(this.call.bind(this)).hide();
     $('#hangup').click(this.hangup.bind(this)).hide();
+    $('#myName').focus();
 
     // manejar tecla enter en inputs
     $('#input').on('keyup', function (e) {
@@ -76,7 +77,7 @@ Chat.prototype.handlePeerOpen = function (id) {
     $('#disconnect').show();
     $('#call').show();
     
-    var room = this.parseQueryString(window.location.search)['room'] || '';
+    var room = this.parseQueryString(window.location.search)['room'];
     var path = window.location.origin + '/api/join';
     var parameters = {
         room: room,

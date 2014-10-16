@@ -35,14 +35,15 @@ var router = express.Router(); 				// get an instance of the express Router
 var rooms = {};
 
 router.route('/join').post(function(req, res) {
-    if (rooms[req.body.room] === undefined) {
-        rooms[req.body.room] = [];
+    var roomName = req.body.room || 'default';
+    if (rooms[roomName] === undefined) {
+        rooms[roomName] = [];
     }
     
-    res.json({ room: req.body.room, peers: rooms[req.body.room] });
+    res.json({ room: roomName, peers: rooms[roomName] });
     
-    if (req.body.id && req.body.id.length > 0 && rooms[req.body.room].indexOf(req.body.id) === -1) {
-        rooms[req.body.room].push({ id: req.body.id, name: req.body.name });
+    if (req.body.id && req.body.id.length > 0 && rooms[roomName].indexOf(req.body.id) === -1) {
+        rooms[roomName].push({ id: req.body.id, name: req.body.name });
     }
 });
 
@@ -66,6 +67,8 @@ router.route('/leave').post(function(req, res) {
         rooms[req.body.room] = room;
         console.log(rooms);
     }
+    
+    res.end('Bye');
 });
 
 // more routes for our API will happen here
