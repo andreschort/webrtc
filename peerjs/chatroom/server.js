@@ -60,12 +60,10 @@ router.route('/name/:room?/:id?').get(function (req, res) {
 
 router.route('/leave').post(function(req, res) {
     var room = rooms[req.body.room];
-    console.log(room);
     
     if (room) {
         room = _.reject(room, function (peer) { return peer.id === req.body.id });
         rooms[req.body.room] = room;
-        console.log(rooms);
     }
     
     res.end('Bye');
