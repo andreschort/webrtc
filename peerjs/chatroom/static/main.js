@@ -10,34 +10,55 @@ function Chat() {
     'use strict';
     
     this.connections = {};
+    this.mediaConnections = {};
     $(window).unload(this.disconnect.bind(this));
 }
 
 Chat.prototype.init = function () {
     'use strict';
 
+    var self = this;
+
+    // botones
+    $('#connect').click(this.connectPeer.bind(this));
+    $('#disconnect').click(this.disconnect.bind(this)).hide();
+    $('#send').click(this.send.bind(this)).attr('disabled', true);
+    $('#call').click(this.call.bind(this)).hide();
+    $('#hangup').click(this.hangup.bind(this)).hide();
+
+    // manejar tecla enter en inputs
+    $('#input').on('keyup', function (e) {
+        var code = e.keyCode || e.which;
+        if (code == 13) {
+            self.send();
+        }
+    }).attr('disabled', true);
+    
+    $('#myName').on('keyup', function (e) {
+        var code = e.keyCode || e.which;
+        if (code == 13) {
+            self.connectPeer();
+        }
+    });
+};
+
+Chat.prototype.connectPeer = function () {
+    'use strict';
+    
+    this.myName = $('#myName').attr({readonly: true, disabled: true}).val();
+    
     this.peer = new Peer({
         host: 'localhost',
         port: 9000,
         path: 'myapp'
     });
     
-    var self = this;
-    
-    this.peer.on('open', function (id) {
-        $('#myId').val(id);
-        
-        var room = self.parseQueryString(window.location.search)['room'];
-        $.post(window.location.origin + '/api/join', {name: room, id: id}, function (data) {
-            self.room = data;
-            $.each(data.peers, function (i, v) { self.connect(v); });
-        });
-    });
-
+    this.peer.on('open', this.handlePeerOpen.bind(this));
     this.peer.on('connection', this.handleConnection.bind(this));
     this.peer.on('call', this.handleCall.bind(this));    
     this.peer.on('error', this.log.bind(this));
     
+    var self = this;
     this.peer.on('disconnected', function () {
         self.log('peer: disconnected');
     });
@@ -45,28 +66,41 @@ Chat.prototype.init = function () {
     this.peer.on('close', function () {
         self.log('peer: closed');
     });
+};
 
-    // botones
-    $('#connect').click(this.connect.bind(this));
-    $('#disconnect').click(this.disconnect.bind(this)).hide();
-    $('#send').click(this.send.bind(this)).attr('disabled', true);
-    $('#call').click(this.call.bind(this));
-    $('#hangup').click(this.hangup.bind(this)).hide();
+Chat.prototype.handlePeerOpen = function (id) {
+    'use strict';
+    
+    $('#myId').val(id);
+    $('#connect').hide();
+    $('#disconnect').show();
+    $('#call').show();
+    
+    var room = this.parseQueryString(window.location.search)['room'];
+    var path = window.location.origin + '/api/join';
+    var parameters = {
+        room: room,
+        id: id,
+        name: this.myName
+    };
+    
+    $.post(path, parameters, this.loadRoom.bind(this));
+};
 
-    // manejar tecla enter en inputs
-    $('#targetId').on('keyup', function (e) {
-        var code = e.keyCode || e.which;
-        if (code == 13) {
-            self.connect();
-        }
+Chat.prototype.loadRoom = function (data) {
+    'use strict';
+    
+    this.room = data.room;
+    this.names = {};
+    var self = this;
+    var party = $('#party');
+    $.each(data.peers, function (i, v) {
+        self.names[v.id] = v.name;
+        self.connect(v.id);
+        $('<li/>').text(v.name).appendTo(party);
     });
-
-    $('#input').on('keyup', function (e) {
-        var code = e.keyCode || e.which;
-        if (code == 13) {
-            self.send();
-        }
-    }).attr('disabled', true);
+    
+    $('<li/>').text(this.myName).appendTo(party);
 };
 
 Chat.prototype.handleConnection = function (conn) {
@@ -93,32 +127,36 @@ Chat.prototype.handleConnection = function (conn) {
 Chat.prototype.handleCall = function (mediaConn) {
     'use strict';
     
-    this.mediaConnection = mediaConn;
-    
-    var self = this;
-
     var constraints = {
         audio: true,
-        video: $('#withVideo').prop('checked')
+        video: true
     };
-    
-    this.getUserMedia(constraints, function (stream) {
-        self.localStream = stream;
-        $('#myVideo').show().attr('src', URL.createObjectURL(stream));
-        mediaConn.answer(stream);
-        self.handleMediaConnection(mediaConn);
-    }, function (err) { alert(err); });
+        
+    if (this.localStream) {
+        mediaConn.answer(this.localStream);
+        this.handleMediaConnection(mediaConn);
+    }
+    else {
+        var self = this;
+        this.getUserMedia(constraints, function (stream) {
+            self.localStream = stream;
+            $('#myVideo').attr('src', URL.createObjectURL(stream));
+            mediaConn.answer(stream);
+            self.handleMediaConnection(mediaConn);
+        }, function (err) { alert(err); });
+    }
 };
 
 Chat.prototype.handleMediaConnection = function (mediaConn) {
-    this.mediaConnection = mediaConn;
+    this.mediaConnections[mediaConn.peer] = mediaConn;
     
     $('#call').hide();
     $('#withVideo').parent().hide();
     $('#hangup').show();
     
     mediaConn.on('stream', function (stream) {
-        $('#remoteVideo').show().attr('src', URL.createObjectURL(stream));
+        $('<video/>').attr({id: mediaConn.peer, autoplay: true, src: URL.createObjectURL(stream)}).appendTo($('#remotes'));
+        $('<br/>').appendTo($('#remotes'));
     });
     
     var self = this;
@@ -138,37 +176,55 @@ Chat.prototype.handleMediaConnection = function (mediaConn) {
 Chat.prototype.handleOpen = function (conn) {
     'use strict';
 
-    $('#targetIdLabel').text('Conectado con');
-    $('#targetId').val(conn.peer).attr('disabled', true);
     $('#connect').hide();
     $('#disconnect').show();
     $('#input').attr('disabled', false).focus();
     $('#send').attr('disabled', false);
 
-    var message = 'Conectado con ' + conn.peer;
+    var name = this.names[conn.peer];
+    
+    if (name === undefined) {
+        var self = this;
+        var parameters = { room: this.room, id: conn.peer };
+        $.get(window.location.origin + '/api/name/' + this.room + '/' + conn.peer, {}, function (data) {
+            self.names[conn.peer] = name = data;
+            
+            var message = 'Conectado con ' + name;
     if ($('#chatLog').val().length > 0){
         message = '\n' + message;
     }
 
     $('#chatLog').append(message);
+        });
+    }else {
+        var message = 'Conectado con ' + name;
+    if ($('#chatLog').val().length > 0){
+        message = '\n' + message;
+    }
+
+    $('#chatLog').append(message);
+    }
+    
+    
 };
 
 Chat.prototype.handleData = function (conn, data) {
     'use strict';
 
-    $('#chatLog').append("\n" + conn.peer +  ": " + data);
+    $('#chatLog').append("\n" + this.names[conn.peer] +  ": " + data);
 };
 
 Chat.prototype.handleClose = function (conn) {
     'use strict';
 
-    $('#targetIdLabel').text('Id destino');
-    $('#targetId').attr('disabled', false).focus();
     $('#connect').show();
     $('#disconnect').hide();
-    $('#chatLog').append('\nDesconectado de ' + conn.peer);
+    $('#chatLog').append('\nDesconectado de ' + this.names[conn.peer]);
     $('#input').attr('disabled', true);
     $('#send').attr('disabled', true);
+    
+    this.connections = _.reject(this.connections, function (x) { return x.peer === conn.peer; });
+    delete this.names[conn.peer];
 };
 
 // acciones
@@ -176,9 +232,7 @@ Chat.prototype.handleClose = function (conn) {
 Chat.prototype.connect = function (id) {
     'use strict';
 
-    var targetId = id || $('#targetId').val();
-
-    var connection = this.peer.connect(targetId);
+    var connection = this.peer.connect(id);
     this.handleConnection(connection);
 };
 
@@ -215,15 +269,18 @@ Chat.prototype.call = function () {
     
     var constraints = {
         audio: true,
-        video: $('#withVideo').prop('checked')
+        video: true
     };
 
     var self = this;
     this.getUserMedia(constraints, function (stream) {
         self.localStream = stream;
-        $('#myVideo').show().attr('src', URL.createObjectURL(stream));
-        var mediaConn = self.peer.call($('#targetId').val(), stream);
-        self.handleMediaConnection(mediaConn);
+        $('#myVideo').attr('src', URL.createObjectURL(stream));
+        
+        _.each(self.connections, function (conn) {
+            var mediaConn = self.peer.call(conn.peer, stream);
+            self.handleMediaConnection(mediaConn);
+        });
     }, function (err) { alert(err); });
 };
 

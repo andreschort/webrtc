@@ -2,15 +2,26 @@
     <head>
         <script src="peer.min.js"></script>
         <script src="jquery-2.1.1.min.js"></script>
+        <script src="underscore-min.js"></script>
         <script src="main.js"></script>
     </head>
     <body>
+        <div id="remotes" style="float:right">
+        </div>
+        
         <span>Tu nombre:</span>
-        <input id="myName" type="text" /><br/>
+        <input id="myName" type="text" />
+        <button id="connect">Conectar</button>
+        <button id="disconnect">Desconectar</button>
+        <buttton id="call">Llamar</buttton>
         <br/>
         
         <textarea id="chatLog" cols="70" rows="18" readonly></textarea><br/>
         <input id="input" type="text" />
         <button id="send" type="button">Enviar</button><br/>
+        
+        <ul id="party">
+        </ul>
+        <video id="myVideo" autoplay></video>
     </body>
 </html>

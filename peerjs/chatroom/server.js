@@ -18,6 +18,8 @@ server.on('disconnect', function(id) {
 var express    = require('express'); 		// call express
 var app        = express(); 				// define our app using express
 var bodyParser = require('body-parser');
+var morgan     = require('morgan');
+var _          = require("underscore");
 
 // configure app to use bodyParser()
 // this will let us get the data from a POST
@@ -33,49 +35,50 @@ var router = express.Router(); 				// get an instance of the express Router
 // middleware to use for all requests
 router.use(function(req, res, next) {
 	// do logging
-	console.log('Something is happening.');
-	next(); // make sure we go to the next routes and don't stop here
-});
 
-// test route to make sure everything is working (accessed at GET http://localhost:8080/api)
-router.get('/', function(req, res) {
-	res.json({ message: 'hooray! welcome to our api!' });
+	next(); // make sure we go to the next routes and don't stop here
 });
 
 var rooms = {};
 
-router.route('/join')
-
-	// create a bear (accessed at POST http://localhost:8080/api/bears)
-	.post(function(req, res) {
-		if (rooms[req.body.name] === undefined) {
-            rooms[req.body.name] = [];
-        }
+router.route('/join').post(function(req, res) {
+    if (rooms[req.body.room] === undefined) {
+        rooms[req.body.room] = [];
+    }
     
-        res.json({ nombre: req.body.name, peers: rooms[req.body.name] });
+    res.json({ room: req.body.room, peers: rooms[req.body.room] });
     
-        if (req.body.id && req.body.id.length > 0 && rooms[req.body.name].indexOf(req.body.id) === -1) {
-            rooms[req.body.name].push(req.body.id);
-        }
-	});
+    if (req.body.id && req.body.id.length > 0 && rooms[req.body.room].indexOf(req.body.id) === -1) {
+        rooms[req.body.room].push({ id: req.body.id, name: req.body.name });
+    }
+});
 
-router.route('/leave')
+router.route('/name/:room?/:id?').get(function (req, res) {
+    var room = rooms[req.params['room']];
+        
+    if (room === undefined) {
+        room = [];
+    }
+    
+    var result = _.find(room, function (peer) { return peer.id === req.params['id']; });
+    res.json(result.name);
+});
 
-	// create a bear (accessed at POST http://localhost:8080/api/bears)
-	.post(function(req, res) {
-		if (rooms[req.body.name]) {
-            var indexOf = rooms[req.body.name].indexOf(req.body.id);
-            if (indexOf > -1) {
-                rooms[req.body.name].splice(indexOf, 1);
-            }
+router.route('/leave').post(function(req, res) {
+    if (rooms[req.body.room]) {
+        var indexOf = rooms[req.body.room].indexOf(req.body.id);
+        if (indexOf > -1) {
+            rooms[req.body.room].splice(indexOf, 1);
         }
-	});
+    }
+});
 
 // more routes for our API will happen here
 
 // REGISTER OUR ROUTES -------------------------------
 // all of our routes will be prefixed with /api
 app.use('/', express.static('static'));
+app.use(morgan('combined'));
 app.use('/api', router);
 
 // START THE SERVER
