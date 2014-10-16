@@ -183,29 +183,24 @@ Chat.prototype.handleOpen = function (conn) {
 
     var name = this.names[conn.peer];
     
+    var addMessage = function (name) {
+        var message = 'Conectado con ' + name;
+        if ($('#chatLog').val().length > 0) {
+            message = '\n' + message;
+        }
+        $('#chatLog').append(message);
+    };
+    
     if (name === undefined) {
         var self = this;
         var parameters = { room: this.room, id: conn.peer };
         $.get(window.location.origin + '/api/name/' + this.room + '/' + conn.peer, {}, function (data) {
             self.names[conn.peer] = name = data;
-            
-            var message = 'Conectado con ' + name;
-    if ($('#chatLog').val().length > 0){
-        message = '\n' + message;
-    }
-
-    $('#chatLog').append(message);
+            addMessage(data);
         });
-    }else {
-        var message = 'Conectado con ' + name;
-    if ($('#chatLog').val().length > 0){
-        message = '\n' + message;
+    } else {
+        addMessage(name);
     }
-
-    $('#chatLog').append(message);
-    }
-    
-    
 };
 
 Chat.prototype.handleData = function (conn, data) {
@@ -217,11 +212,7 @@ Chat.prototype.handleData = function (conn, data) {
 Chat.prototype.handleClose = function (conn) {
     'use strict';
 
-    $('#connect').show();
-    $('#disconnect').hide();
     $('#chatLog').append('\nDesconectado de ' + this.names[conn.peer]);
-    $('#input').attr('disabled', true);
-    $('#send').attr('disabled', true);
     
     this.connections = _.reject(this.connections, function (x) { return x.peer === conn.peer; });
     delete this.names[conn.peer];
@@ -257,12 +248,19 @@ Chat.prototype.disconnect = function () {
     $('#myName').attr({disabled: false, readonly: false}).focus();
     $('#input').attr('disabled', true);
     $('#send').attr('disabled', true);
+    
+    $('#party').empty();
 
     $.each(this.connections, function (prop, val) {
         val.close();
     });
-    
-    $.post(window.location.origin + '/api/leave', {name: this.room, id: this.peer.id});
+
+    $.ajax({
+        type: 'POST',
+        url: window.location.origin + '/api/leave',
+        data: {room: this.room, id: this.peer.id},
+        async:false
+    });
 };
 
 Chat.prototype.log = function (err) {

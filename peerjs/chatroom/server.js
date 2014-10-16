@@ -32,13 +32,6 @@ var port = process.env.PORT || 8080; 		// set our port
 // =============================================================================
 var router = express.Router(); 				// get an instance of the express Router
 
-// middleware to use for all requests
-router.use(function(req, res, next) {
-	// do logging
-
-	next(); // make sure we go to the next routes and don't stop here
-});
-
 var rooms = {};
 
 router.route('/join').post(function(req, res) {
@@ -66,13 +59,12 @@ router.route('/name/:room?/:id?').get(function (req, res) {
 
 router.route('/leave').post(function(req, res) {
     var room = rooms[req.body.room];
+    console.log(room);
     
     if (room) {
-        room = _.reject(room, function (peer) { peer.id === req.body.id });
-        var indexOf = rooms[req.body.room].indexOf(req.body.id);
-        if (indexOf > -1) {
-            rooms[req.body.room].splice(indexOf, 1);
-        }
+        room = _.reject(room, function (peer) { return peer.id === req.body.id });
+        rooms[req.body.room] = room;
+        console.log(rooms);
     }
 });
 
