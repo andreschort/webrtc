@@ -76,7 +76,7 @@ Chat.prototype.handlePeerOpen = function (id) {
     $('#disconnect').show();
     $('#call').show();
     
-    var room = this.parseQueryString(window.location.search)['room'];
+    var room = this.parseQueryString(window.location.search)['room'] || '';
     var path = window.location.origin + '/api/join';
     var parameters = {
         room: room,
@@ -251,12 +251,18 @@ Chat.prototype.send = function () {
 
 Chat.prototype.disconnect = function () {
     'use strict';
+    
+    $('#connect').show();
+    $('#disconnect').hide();
+    $('#myName').attr({disabled: false, readonly: false}).focus();
+    $('#input').attr('disabled', true);
+    $('#send').attr('disabled', true);
 
     $.each(this.connections, function (prop, val) {
         val.close();
     });
     
-    $.post(window.location.origin + '/api/leave', {name: room, id: id});
+    $.post(window.location.origin + '/api/leave', {name: this.room, id: this.peer.id});
 };
 
 Chat.prototype.log = function (err) {

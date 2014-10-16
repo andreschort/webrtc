@@ -65,7 +65,10 @@ router.route('/name/:room?/:id?').get(function (req, res) {
 });
 
 router.route('/leave').post(function(req, res) {
-    if (rooms[req.body.room]) {
+    var room = rooms[req.body.room];
+    
+    if (room) {
+        room = _.reject(room, function (peer) { peer.id === req.body.id });
         var indexOf = rooms[req.body.room].indexOf(req.body.id);
         if (indexOf > -1) {
             rooms[req.body.room].splice(indexOf, 1);
@@ -78,7 +81,7 @@ router.route('/leave').post(function(req, res) {
 // REGISTER OUR ROUTES -------------------------------
 // all of our routes will be prefixed with /api
 app.use('/', express.static('static'));
-app.use(morgan('combined'));
+app.use(morgan('dev'));
 app.use('/api', router);
 
 // START THE SERVER
